@@ -1,0 +1,3 @@
+[submodule "vagrant-cassandra"]
+	path = vagrant-cassandra
+	url = https://github.com/kwencel/vagrant-cassandra.git
