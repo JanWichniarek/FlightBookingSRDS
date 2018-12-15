@@ -27,11 +27,13 @@ class BackendSession(contactPoint: String, keyspace: String) {
         session = cluster.connect(keyspace)
     }
 
-    private val GET_ALL_RESERVATIONS by lazy { session.prepare("SELECT * FROM reservations") }
-    private val IS_SEAT_FREE by lazy { session.prepare("SELECT is_free FROM seats WHERE flight_id = ? AND seat_no = ?") }
-    private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = '?' AND date = '?'") }
-    private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count FROM free_seats WHERE flight_id = ?") }
-    private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true") }
+    private val GET_ALL_RESERVATIONS by lazy { session.prepare("SELECT * FROM reservations;") }
+    private val GET_RESERVATIONS_LIST_FOR_FLIGHT by lazy {"SELECT * FROM reservations WHERE flight_id = ?;"}
+    private val GET_RESERVATION_ID_FOR_FLIGHT_AND_SEAT by lazy {"SELECT * FROM reservations WHERE flight_id = ? and seat_no = ?;"}
+    private val IS_SEAT_FREE by lazy { session.prepare("SELECT is_free FROM seats WHERE flight_id = ? AND seat_no = ?;") }
+    private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = '?' AND date = '?';") }
+    private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count FROM free_seats WHERE flight_id = ?;") }
+    private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true;") }
 
     fun isSeatFree(flightId: FlightId, seatNo: SeatNo): Boolean {
         val result = session.execute(BoundStatement(IS_SEAT_FREE).bind(flightId, seatNo)).map { r -> r.getBool("is_free") }
