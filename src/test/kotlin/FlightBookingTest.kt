@@ -102,7 +102,7 @@ class FlightBookingTest {
         }
     }
 
-    private fun test(scenario: BiFunction<BackendSession, Passenger, Unit>) {
+    private fun test(scenario: (BackendSession, Passenger) -> Unit) {
         val session = BackendSession("127.0.0.1", "FlightBooking")
         val threads = mutableListOf<Thread>()
         loggingThread = Thread {
@@ -122,7 +122,7 @@ class FlightBookingTest {
             val thread = Thread {
                 val passenger = "Pasażer $i"
                 for (j in 0..999) {
-                    scenario.apply(session, passenger)
+                    scenario.invoke(session, passenger)
                 }
             }
             threads.add(thread)
@@ -135,7 +135,7 @@ class FlightBookingTest {
 
     @Test
     fun testMakeReservationAndCheck() {
-        test(BiFunction{session, passenger -> this.makeReservationAndCheck(session, passenger)})
+        test { session, passenger -> makeReservationAndCheck(session, passenger) }
     }
 
     private fun getRandomCity() = Cities.getRandomCity()
