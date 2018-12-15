@@ -1,12 +1,14 @@
 import model.*
+import model.enums.Cities
+import model.enums.FlightDates
 import org.junit.Test
 import java.util.*
 import java.util.function.BiFunction
 
 class FlightBookingTest {
 
-    private val random = Random()
     private lateinit var loggingThread: Thread
+    private val random = Random()
 
     data class ReservationData(val flight: Flight, val reservationId: ReservationId, val seat: Seat)
 
@@ -101,19 +103,26 @@ class FlightBookingTest {
     }
 
     private fun test(scenario: BiFunction<BackendSession, Passenger, Unit>) {
+        val session = BackendSession("127.0.0.1", "FlightBooking")
         val threads = mutableListOf<Thread>()
         loggingThread = Thread {
-            while (!Thread.interrupted()) {
-                Thread.sleep(5000)
+            try {
+                while (!Thread.interrupted()) {
+                    Thread.sleep(1000)
+                    println(Logger.printStatus())
+                }
+            } catch (e: InterruptedException) {
+                // nop
+            } finally {
                 println(Logger.printStatus())
             }
         }
+        loggingThread.start()
         for (i in 0..9) {
             val thread = Thread {
-                val backendSession = BackendSession("127.0.0.1", "FlightBooking")
                 val passenger = "Pasażer $i"
                 for (j in 0..999) {
-                    scenario.apply(backendSession, passenger)
+                    scenario.apply(session, passenger)
                 }
             }
             threads.add(thread)
@@ -121,6 +130,7 @@ class FlightBookingTest {
         }
         threads.forEach { it.start() }
         threads.forEach { it.join() }
+        loggingThread.interrupt()
     }
 
     @Test
@@ -132,9 +142,10 @@ class FlightBookingTest {
     private fun getRandomDate() = FlightDates.getRandomDate()
     private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt()]
     private fun getRandomFlight(session: BackendSession): Flight {
-        val city = getRandomCity()
-        val date = getRandomDate()
+        val city = "Warsaw"
+        val date = "2019-06-06"
         val flights = session.getFlights(date, city)
-        return flights[random.nextInt(flights.size)]
+//        return flights[random.nextInt(flights.size)]
+        return flights[0]
     }
 }

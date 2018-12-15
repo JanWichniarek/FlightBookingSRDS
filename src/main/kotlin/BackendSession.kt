@@ -33,8 +33,9 @@ class BackendSession(contactPoint: String, keyspace: String) {
 
     private val GET_ALL_RESERVATIONS by lazy { session.prepare("SELECT * FROM reservations;") }
     private val GET_RESERVATIONS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM reservations WHERE flight_id = ?;") }
-    private val GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT by lazy { session.prepare("SELECT id FROM reservations WHERE flight_id = ? and seat_no = ?;") }
+    private val GET_RESERVATIONS_BY_FLIGHT_AND_SEAT by lazy { session.prepare("SELECT * FROM reservations WHERE flight_id = ? and seat_no = ?;") }
     private val IS_SEAT_FREE by lazy { session.prepare("SELECT is_free FROM seats WHERE flight_id = ? AND seat_no = ?;") }
+    private val GET_ALL_FLIGHTS  by lazy { session.prepare("SELECT * FROM flights;") }
     private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = ? AND date = ?;") }
     private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count FROM free_seats WHERE flight_id = ?;") }
     private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true;") }
@@ -49,15 +50,23 @@ class BackendSession(contactPoint: String, keyspace: String) {
         val result = session
             .execute(BoundStatement(IS_SEAT_FREE).bind(flightId, seatNo))
             .map { r -> r.getBool("is_free") }
-        logger.info(IS_SEAT_FREE.toString())
+        logger.debug(IS_SEAT_FREE.toString())
         return if (result.size == 1) result[0] else throw RuntimeException("Should not happen")
+    }
+
+    fun getFlights(): List<Flight> {
+        val result = session
+            .execute(BoundStatement(GET_FLIGHTS_BY_DAY_AND_DEPARTURE))
+            .map { r -> Flight(r) }
+        logger.debug(GET_ALL_FLIGHTS.toString())
+        return result
     }
 
     fun getFlights(day: String, departure: String): List<Flight> {
         val result = session
             .execute(BoundStatement(GET_FLIGHTS_BY_DAY_AND_DEPARTURE).bind(departure, day))
             .map { r -> Flight(r) }
-        logger.info(GET_FLIGHTS_BY_DAY_AND_DEPARTURE.toString())
+        logger.debug(GET_FLIGHTS_BY_DAY_AND_DEPARTURE.toString())
         return result
     }
 
@@ -65,7 +74,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
         val result = session
             .execute(BoundStatement(GET_FREE_SEATS_COUNT_BY_FLIGHT).bind(flightId))
             .map { r -> r.getInt("count") }
-        logger.info(GET_FREE_SEATS_COUNT_BY_FLIGHT.toString())
+        logger.debug(GET_FREE_SEATS_COUNT_BY_FLIGHT.toString())
         return if (result.size == 1) result[0] else throw RuntimeException("Should not happen")
     }
 
@@ -73,7 +82,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
         val result = session
             .execute(BoundStatement(GET_FREE_SEATS_BY_FLIGHT).bind(flightId))
             .map { r -> Seat(r) }
-        logger.info(GET_FREE_SEATS_BY_FLIGHT.toString())
+        logger.debug(GET_FREE_SEATS_BY_FLIGHT.toString())
         return result
     }
 
@@ -81,7 +90,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
         val result = session
             .execute(BoundStatement(GET_ALL_RESERVATIONS))
             .map { r -> Reservation(r) }
-        logger.info(GET_ALL_RESERVATIONS.toString())
+        logger.debug(GET_ALL_RESERVATIONS.toString())
         return result
     }
 
@@ -89,15 +98,16 @@ class BackendSession(contactPoint: String, keyspace: String) {
         val result = session
             .execute(BoundStatement(GET_RESERVATIONS_BY_FLIGHT).bind(flightId))
             .map { r -> Reservation(r) }
-        logger.info(GET_RESERVATIONS_BY_FLIGHT.toString())
+        logger.debug(GET_RESERVATIONS_BY_FLIGHT.toString())
         return result
     }
 
     fun getReservations(flightId: FlightId, seatNo: SeatNo): List<Reservation> {
         val result = session
-            .execute(BoundStatement(GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT).bind(flightId, seatNo))
+            .execute(BoundStatement(GET_RESERVATIONS_BY_FLIGHT_AND_SEAT).bind(flightId, seatNo))
+            .filter { r -> r.getString("passenger") != null }
             .map { r -> Reservation(r) }
-        logger.info(GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT.toString())
+        logger.debug(GET_RESERVATIONS_BY_FLIGHT_AND_SEAT.toString())
         return result
     }
 
@@ -111,7 +121,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
 
     fun updateReservationPassenger(newPassenger: Passenger, flightId: FlightId, seatNo: SeatNo, id: ReservationId) {
         session.execute(BoundStatement(UPDATE_RESERVATION_PASSENGER).bind(newPassenger, flightId, seatNo, id))
-        logger.info(UPDATE_RESERVATION_PASSENGER.toString())
+        logger.debug(UPDATE_RESERVATION_PASSENGER.toString())
     }
 
     /**
@@ -140,28 +150,36 @@ class BackendSession(contactPoint: String, keyspace: String) {
 
     private fun insertNewReservation(reservationId: ReservationId, flightId: FlightId, seatNo: SeatNo, passenger: Passenger) {
         session.execute(BoundStatement(INSERT_NEW_RESERVATION).bind(reservationId, flightId, passenger, seatNo))
-        logger.info(INSERT_NEW_RESERVATION.toString())
+        logger.debug(INSERT_NEW_RESERVATION.toString())
     }
 
     private fun changeFreeSeatsCount(toAddToCounterValue: Int, flightId: FlightId) {
 //        session.execute(BoundStatement(SET_FREE_SEATS_COUNT).bind(toAddToCounterValue, flightId))
 //        logger.info(SET_FREE_SEATS_COUNT.toString())
-        logger.info("Counter temporarily disabled")
+        logger.debug("Counter temporarily disabled")
     }
 
     private fun setSeatIsFree(newIsFreeValue: Boolean, flightId: FlightId, seatNo: SeatNo) {
         session.execute(BoundStatement(SET_SEAT_IS_FREE).bind(newIsFreeValue, flightId, seatNo))
-        logger.info(SET_SEAT_IS_FREE.toString())
+        logger.debug(SET_SEAT_IS_FREE.toString())
     }
 
     private fun deleteReservation(reservationId: ReservationId, flightId: FlightId, seatNo: SeatNo) {
         val result = session.execute(BoundStatement(DELETE_RESERVATION).bind(flightId, seatNo, reservationId))
-        logger.info(DELETE_RESERVATION.toString())
+        logger.debug(DELETE_RESERVATION.toString())
     }
 
     private fun deleteAllReservationsForThisSeatAndFlight(flightId: FlightId, seatNo: SeatNo) {
         val result = session.execute(BoundStatement(DELETE_ALL_RESERVATIONS_FOR_SEAT_AND_FLIGHT).bind(flightId, seatNo))
-        logger.info(DELETE_ALL_RESERVATIONS_FOR_SEAT_AND_FLIGHT.toString())
+        logger.debug(DELETE_ALL_RESERVATIONS_FOR_SEAT_AND_FLIGHT.toString())
+    }
+
+    private fun finalize() {
+        try {
+            session.cluster.close()
+        } catch (e: Exception) {
+            logger.error("Could not close existing cluster", e)
+        }
     }
 
     companion object {

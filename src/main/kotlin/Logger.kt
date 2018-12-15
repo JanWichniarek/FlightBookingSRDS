@@ -51,10 +51,13 @@ object Logger {
     }
 
     fun printStatus(): String {
-        return """operationsExecuted : $operationsExecuted
+        return """
+            ----------------------------------------
+            operationsExecuted : $operationsExecuted
             multipleReservationsOnOneSeat : $multipleReservationsOnOneSeat
             seatReservationNotVisible : $seatReservationNotVisible
             atomicReservationUnsuccessful : $atomicReservationUnsuccessful
+            ----------------------------------------
         """.trimIndent()
     }
 
