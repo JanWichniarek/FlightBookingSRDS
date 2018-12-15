@@ -140,7 +140,7 @@ class FlightBookingTest {
 
     private fun getRandomCity() = Cities.getRandomCity()
     private fun getRandomDate() = FlightDates.getRandomDate()
-    private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt()]
+    private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt(3)]
     private fun getRandomFlight(session: BackendSession): Flight {
         val city = "Warsaw"
         val date = "2019-06-06"
