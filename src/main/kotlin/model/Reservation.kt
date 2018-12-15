@@ -12,4 +12,10 @@ data class Reservation(val id: UUID,
                                    dbRow.getUUID("flight_id"),
                                    dbRow.getString("passenger"),
                                    dbRow.getInt("seat_no"))
+
+    override fun toString(): String {
+        return "Reservation(id=$id, flight_id=$flight_id, passenger='$passenger', seat_no=$seat_no)"
+    }
+
+
 }

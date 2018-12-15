@@ -16,4 +16,10 @@ data class Flight(val id: UUID,
                                    dbRow.getString("date"),
                                    dbRow.getInt("duration"),
                                    dbRow.getFloat("cost"))
+
+    override fun toString(): String {
+        return "Flight(id=$id, departure='$departure', destination='$destination', date='$date', duration=$duration, cost=$cost)"
+    }
+
+
 }
