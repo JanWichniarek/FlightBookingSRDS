@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS seats (
   is_free boolean,
   PRIMARY KEY (flight_id, seat_no)
 );
+CREATE INDEX IF NOT EXISTS is_free_idx ON FlightBooking.seats ( is_free );
 
 -- ------------------------------------------------------------------------------------------------
 INSERT INTO flights (id, departure, destination, date, duration, cost)
