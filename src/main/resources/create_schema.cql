@@ -3,6 +3,12 @@ CREATE KEYSPACE IF NOT EXISTS FlightBooking
 
 USE FlightBooking;
 
+DROP TABLE IF EXISTS FlightBooking.flights;
+DROP TABLE IF EXISTS FlightBooking.free_seats;
+DROP TABLE IF EXISTS FlightBooking.reservations;
+DROP INDEX IF EXISTS FlightBooking.is_free_idx;
+DROP TABLE IF EXISTS FlightBooking.seats;
+
 CREATE TABLE IF NOT EXISTS flights (
   id uuid,
   departure text,
