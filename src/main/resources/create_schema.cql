@@ -26,11 +26,10 @@ CREATE TABLE IF NOT EXISTS free_seats (
 );
 
 CREATE TABLE IF NOT EXISTS reservations (
-	id	uuid,
 	flight_id		uuid,
 	passenger		text,
   seat_no		int,
-	PRIMARY KEY (flight_id, id)
+	PRIMARY KEY (flight_id, seat_no)
 );
 
 CREATE TABLE IF NOT EXISTS seats (
@@ -79,11 +78,11 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 10, true);
 
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (e0b843ac-ffdc-11e8-8eb2-f2801f1b9fd1, 15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Brad Pitt', 1);
+INSERT INTO reservations (flight_id, passenger, seat_no)
+  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Brad Pitt', 1);
 
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (09805478-ffdd-11e8-8eb2-f2801f1b9fd1, 15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Katie Melua', 2);
+INSERT INTO reservations (flight_id, passenger, seat_no)
+  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Katie Melua', 2);
 
 -- ------------------------------------------------------------------------------------------------
 

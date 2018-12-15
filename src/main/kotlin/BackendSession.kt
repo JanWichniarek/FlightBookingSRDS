@@ -18,7 +18,6 @@ import java.util.UUID
  */
 
 typealias FlightId = UUID
-typealias ReservationId = UUID
 typealias SeatNo = Int
 typealias Passenger = String
 
@@ -35,11 +34,12 @@ class BackendSession(contactPoint: String, keyspace: String) {
     private val GET_RESERVATIONS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM reservations WHERE flight_id = ?;") }
     private val GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT by lazy { session.prepare("SELECT id FROM reservations WHERE flight_id = ? and seat_no = ?;") }
     private val IS_SEAT_FREE by lazy { session.prepare("SELECT is_free FROM seats WHERE flight_id = ? AND seat_no = ?;") }
-    private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = '?' AND date = '?';") }
+    private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = ? AND date = ?;") }
     private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count FROM free_seats WHERE flight_id = ?;") }
     private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true;") }
-    private val INSERT_NEW_RESERVATION by lazy { session.prepare("INSERT INTO reservations (id, flight_id, passenger, seat_no) VALUES (?, ?, ?, ?);") }
+    private val INSERT_NEW_RESERVATION by lazy { session.prepare("INSERT INTO reservations (flight_id, passenger, seat_no) VALUES (?, ?, ?);") }
     private val UPDATE_RESERVATION_PASSENGER by lazy { session.prepare("UPDATE reservations SET passenger = ? WHERE flight_id = ? AND seat_no = ? IF EXISTS;") }
+    private val DELETE_RESERVATION by lazy { session.prepare("DELETE flight_id, passenger, seat_no FROM reservations WHERE flight_id = ? AND seat_no = ? IF EXISTS;") }
     private val SET_FREE_SEATS_COUNT by lazy { session.prepare("UPDATE free_seats SET count = count + ? WHERE flight_id = ?;") }
     private val SET_SEAT_IS_FREE by lazy { session.prepare("UPDATE seats SET is_free = ? WHERE flight_id = ? AND seat_no = ?;") }
 
@@ -75,7 +75,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
         return result
     }
 
-    // Probably will be unused
     fun getAllReservations(): List<Reservation> {
         val result = session
             .execute(BoundStatement(GET_ALL_RESERVATIONS))
@@ -84,7 +83,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
         return result
     }
 
-    fun getReservations(flightId: FlightId): List<Reservation> {
+    fun getReservation(flightId: FlightId): List<Reservation> {
         val result = session
             .execute(BoundStatement(GET_RESERVATIONS_BY_FLIGHT).bind(flightId))
             .map { r -> Reservation(r) }
@@ -92,22 +91,43 @@ class BackendSession(contactPoint: String, keyspace: String) {
         return result
     }
 
-    fun getReservationId(flightId: FlightId, seatNo: SeatNo): ReservationId {
+    fun getReservation(flightId: FlightId, seatNo: SeatNo): Reservation? {
         val result = session
             .execute(BoundStatement(GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT).bind(flightId, seatNo))
-            .map { r -> r.getUUID("id") }
+            .map { r -> Reservation(r) }
         logger.info(GET_RESERVATION_ID_BY_FLIGHT_AND_SEAT.toString())
-        return if (result.size == 1) result[0] else throw RuntimeException("Should not happen")
+        if (result.size == 1) return result[0]
+        else if (result.isEmpty()) return null
+        else throw RuntimeException("Should not happen")
     }
 
-    private fun insertNewReservation(reservationId: ReservationId, flightId: FlightId, seatNo: SeatNo, passenger: Passenger) {
-        session.execute(BoundStatement(INSERT_NEW_RESERVATION).bind(reservationId, flightId, passenger, seatNo))
+    fun createNewReservation(passenger: Passenger, flightId: FlightId, seatNo: SeatNo) {
+        setSeatIsFree(false, flightId, seatNo)
+        changeFreeSeatsCount(-1, flightId)
+        insertNewReservation(flightId, seatNo, passenger)
+        return reservationUuid
+    }
+
+    fun updateReservationPassenger(newPassenger: Passenger, flightId: FlightId, seatNo: SeatNo) {
+        session.execute(BoundStatement(UPDATE_RESERVATION_PASSENGER).bind(newPassenger, flightId, seatNo))
+        logger.info(UPDATE_RESERVATION_PASSENGER.toString())
+    }
+
+    fun cancelReservation(flightId: FlightId, seatNo: SeatNo) {
+        changeFreeSeatsCount(1, flightId)
+        setSeatIsFree(true, flightId, seatNo)
+        deleteReservation(flightId, seatNo)
+    }
+
+    private fun insertNewReservation(flightId: FlightId, seatNo: SeatNo, passenger: Passenger) {
+        session.execute(BoundStatement(INSERT_NEW_RESERVATION).bind(flightId, passenger, seatNo))
         logger.info(INSERT_NEW_RESERVATION.toString())
     }
 
     private fun changeFreeSeatsCount(toAddToCounterValue: Int, flightId: FlightId) {
-        session.execute(BoundStatement(SET_FREE_SEATS_COUNT).bind(toAddToCounterValue, flightId))
-        logger.info(SET_FREE_SEATS_COUNT.toString())
+//        session.execute(BoundStatement(SET_FREE_SEATS_COUNT).bind(toAddToCounterValue, flightId))
+//        logger.info(SET_FREE_SEATS_COUNT.toString())
+//        logger.info("Counter temporarily disabled")
     }
 
     private fun setSeatIsFree(newIsFreeValue: Boolean, flightId: FlightId, seatNo: SeatNo) {
@@ -115,16 +135,9 @@ class BackendSession(contactPoint: String, keyspace: String) {
         logger.info(SET_SEAT_IS_FREE.toString())
     }
 
-    fun createNewReservation(passenger: Passenger, flightId: FlightId, seatNo: SeatNo) : ReservationId {
-        val reservationUuid = UUID.randomUUID()
-        setSeatIsFree(false, flightId, seatNo)
-        changeFreeSeatsCount(-1, flightId)
-        insertNewReservation(reservationUuid, flightId, seatNo, passenger)
-        return reservationUuid
-    }
-
-    fun updateReservationPassenger(newPassenger: Passenger, flightId: FlightId, seatNo: SeatNo) {
-        session.execute(BoundStatement(UPDATE_RESERVATION_PASSENGER).bind(newPassenger, flightId, seatNo))
+    private fun deleteReservation(flightId: FlightId, seatNo: SeatNo) {
+        val result = session.execute(BoundStatement(DELETE_RESERVATION).bind(flightId, seatNo))
+        logger.info(DELETE_RESERVATION.toString())
     }
 
     companion object {

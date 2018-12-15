@@ -8,8 +8,8 @@ enum class Cities(val cityName: String) {
 
     companion object {
         val random = Random()
-        fun getRandomCity(): Cities {
-            return values()[random.nextInt(values().size)]
+        fun getRandomCity(): String {
+            return values()[random.nextInt(values().size)].cityName
         }
     }
 
