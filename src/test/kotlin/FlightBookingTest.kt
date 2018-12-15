@@ -17,13 +17,13 @@ class FlightBookingTest {
         if (freeSeats.isNotEmpty()) {
             val seat = freeSeats[random.nextInt(freeSeats.size)]
             val reservationId = session.createNewReservation(passenger, flight.id, seat.seat_no)
-            val reservationForMySeat = session.getReservation(flight.id, seat.seat_no)
+            val reservationsForMySeat = session.getReservations(flight.id, seat.seat_no)
             when {
                 !session.isSeatFree(flight.id, seat.seat_no) -> run { Logger.addSeatFreeAfterReservation(flight, seat); success = true; }
-                reservationForMySeat?.passenger == passenger -> Logger.addSuccessfulOperation()
-                reservationForMySeat?.passenger != passenger -> Logger.notExistingReservation(flight, seat)
-                reservationForMySeat.size > 1 -> Logger.anotherReservations(flight, seat)
-                reservationForMySeat.isEmpty() -> Logger.addSeatFreeAfterReservation(flight, seat)
+                reservationsForMySeat.size == 1 && reservationsForMySeat[0].id == reservationId -> Logger.addSuccessfulOperation()
+                reservationsForMySeat.size == 1 && reservationsForMySeat[0].id != reservationId -> Logger.notExistingReservation(flight, seat)
+                reservationsForMySeat.size > 1 -> Logger.anotherReservations(flight, seat)
+                reservationsForMySeat.isEmpty() -> Logger.addSeatFreeAfterReservation(flight, seat)
             }
             if (success) {
                 return ReservationData(flight, reservationId, seat)
@@ -35,7 +35,7 @@ class FlightBookingTest {
     fun makeReservationAndDecline(session: BackendSession, passenger: Passenger) {
         val (flight, reservationId, seat) = makeReservationAndCheck(session, passenger) ?: return
         session.cancelReservation(flight.id, seat.seat_no, reservationId)
-        val reservationsForMySeat = session.getReservation(flight.id, seat.seat_no)
+        val reservationsForMySeat = session.getReservations(flight.id, seat.seat_no)
         when {
             !session.isSeatFree(flight.id, seat.seat_no) || reservationsForMySeat.isNotEmpty() ->
                 Logger.unsuccessfulCancellation(flight, seat)
@@ -47,8 +47,8 @@ class FlightBookingTest {
         val (flight, reservationId, seat) = makeReservationAndCheck(session, passenger) ?: return
         val (changedFlight, changedReservationId, changedSeat) = makeReservationAndCheck(session, passenger) ?: return
         session.cancelReservation(flight.id, seat.seat_no, reservationId)
-        val reservationsForMyOldSeat = session.getReservation(flight.id, seat.seat_no)
-        val reservationsForMyNewSeat = session.getReservation(changedFlight.id, changedSeat.seat_no)
+        val reservationsForMyOldSeat = session.getReservations(flight.id, seat.seat_no)
+        val reservationsForMyNewSeat = session.getReservations(changedFlight.id, changedSeat.seat_no)
         when {
             !session.isSeatFree(flight.id, seat.seat_no) || reservationsForMyOldSeat.isNotEmpty() ->
                 Logger.unsuccessfulCancellation(flight, seat)
@@ -75,7 +75,7 @@ class FlightBookingTest {
         var shouldDeclineAllReservations = false
         flightsToBook.forEach {
             val reservation = reservations[it.id]
-            val reservationsForSeat = session.getReservation(it.id, reservation!!.second.seat_no)
+            val reservationsForSeat = session.getReservations(it.id, reservation!!.second.seat_no)
             if (reservationsForSeat.size > 1 || (reservationsForSeat.size == 1 && reservationsForSeat[0].id != reservation.first)) {
                 shouldDeclineAllReservations = true
             }
