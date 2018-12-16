@@ -40,13 +40,11 @@ class BackendSession(contactPoint: String, keyspace: String) {
     private val IS_SEAT_FREE by lazy { session.prepare("SELECT is_free FROM seats WHERE flight_id = ? AND seat_no = ?;") }
     private val GET_ALL_FLIGHTS  by lazy { session.prepare("SELECT * FROM flights;") }
     private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = ? AND date = ?;") }
-    private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count FROM free_seats WHERE flight_id = ?;") }
     private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true;") }
     private val INSERT_NEW_RESERVATION by lazy { session.prepare("INSERT INTO reservations (id, flight_id, passenger, seat_no) VALUES (?, ?, ?, ?);") }
     private val UPDATE_RESERVATION_PASSENGER by lazy { session.prepare("UPDATE reservations SET passenger = ? WHERE flight_id = ? AND seat_no = ? AND id = ? IF EXISTS;") }
     private val DELETE_RESERVATION by lazy { session.prepare("DELETE passenger FROM reservations WHERE flight_id = ? AND seat_no = ? AND id = ?;") }
     private val DELETE_ALL_RESERVATIONS_FOR_SEAT_AND_FLIGHT by lazy { session.prepare("DELETE passenger FROM reservations WHERE flight_id = ? AND seat_no = ? AND id = ?;") }
-    private val SET_FREE_SEATS_COUNT by lazy { session.prepare("UPDATE free_seats SET count = count + ? WHERE flight_id = ?;") }
     private val SET_SEAT_IS_FREE by lazy { session.prepare("UPDATE seats SET is_free = ? WHERE flight_id = ? AND seat_no = ?;") }
 
     fun isSeatFree(flightId: FlightId, seatNo: SeatNo): Boolean {
@@ -71,14 +69,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
             .map { r -> Flight(r) }
         logger.debug(GET_FLIGHTS_BY_DAY_AND_DEPARTURE.toString())
         return result
-    }
-
-    fun getFreeSeatsCount(flightId: FlightId): Int {
-        val result = session
-            .executeAndHandleException(BoundStatement(GET_FREE_SEATS_COUNT_BY_FLIGHT).bind(flightId))
-            .map { r -> r.getInt("count") }
-        logger.debug(GET_FREE_SEATS_COUNT_BY_FLIGHT.toString())
-        return if (result.size == 1) result[0] else throw RuntimeException("Should not happen")
     }
 
     fun getFreeSeats(flightId: FlightId): List<Seat> {
@@ -119,7 +109,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
     fun createNewReservation(passenger: Passenger, flightId: FlightId, seatNo: SeatNo) : ReservationId {
         val reservationUuid = UUID.randomUUID()
         setSeatIsFree(false, flightId, seatNo)
-        changeFreeSeatsCount(-1L, flightId)
         insertNewReservation(reservationUuid, flightId, seatNo, passenger)
         return reservationUuid
     }
@@ -141,8 +130,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
      * Delete ALL reservation for this seat to ensure safe/proper setting of seat as free.
      */
     fun cancelReservations(flightId: FlightId, seatNo: SeatNo) {
-        changeFreeSeatsCount(1L, flightId)
-        // TODO how many times decrement counter?
         setSeatIsFree(true, flightId, seatNo)
         deleteAllReservationsForThisSeatAndFlight(flightId, seatNo)
     }
@@ -153,7 +140,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
      * DO NOT set seat as free because it is still reserved by another reservation.
      */
     fun cancelReservation(flightId: FlightId, seatNo: SeatNo, reservationId: ReservationId) {
-        changeFreeSeatsCount(1L, flightId)
         if (getReservations(flightId, seatNo).size == 1) {
             setSeatIsFree(true, flightId, seatNo)
         }
@@ -170,12 +156,6 @@ class BackendSession(contactPoint: String, keyspace: String) {
             )
         )
         logger.debug(INSERT_NEW_RESERVATION.toString())
-    }
-
-    // TODO unused counter!
-    private fun changeFreeSeatsCount(toAddToCounterValue: Long, flightId: FlightId) {
-        session.executeAndHandleException(BoundStatement(SET_FREE_SEATS_COUNT).bind(toAddToCounterValue, flightId))
-        logger.info(SET_FREE_SEATS_COUNT.toString())
     }
 
     private fun setSeatIsFree(newIsFreeValue: Boolean, flightId: FlightId, seatNo: SeatNo) {

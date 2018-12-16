@@ -4,7 +4,6 @@ CREATE KEYSPACE IF NOT EXISTS FlightBooking
 USE FlightBooking;
 
 DROP TABLE IF EXISTS FlightBooking.flights;
-DROP TABLE IF EXISTS FlightBooking.free_seats;
 DROP TABLE IF EXISTS FlightBooking.reservations;
 DROP INDEX IF EXISTS FlightBooking.is_free_idx;
 DROP TABLE IF EXISTS FlightBooking.seats;
@@ -17,12 +16,6 @@ CREATE TABLE IF NOT EXISTS flights (
   duration int,
   cost float,
   PRIMARY KEY ((departure, date), destination)
-);
-
-CREATE TABLE IF NOT EXISTS free_seats (
-	flight_id	uuid,
-	count counter,
-	PRIMARY KEY (flight_id)
 );
 
 CREATE TABLE IF NOT EXISTS reservations (
@@ -45,15 +38,11 @@ CREATE INDEX IF NOT EXISTS is_free_idx ON FlightBooking.seats ( is_free );
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Warsaw', 'Tokyo', '2019-05-12', 600, 1500);
 
-UPDATE FlightBooking.free_seats
- SET count = count + 48
- WHERE flight_id = 15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1;
+INSERT INTO seats (flight_id, seat_no, is_free)
+  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 1, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 1, false);
-
-INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 2, false);
+  VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 2, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 3, true);
@@ -198,21 +187,10 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 50, true);
-
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (cc8fe4a4-7c68-4dbc-8ba1-63160fa84077, 15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Brad Pitt', 1);
-
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (3ed47b2f-ba2b-4f53-9bc3-36ca2cac123a, 15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Katie Melua', 2);
-
 -- ------------------------------------------------------------------------------------------------
 
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (739d8b9a-ffd9-11e8-8eb2-f2801f1b9fd1, 'Warsaw', 'Los Angeles', '2019-05-12', 730, 900);
-
-UPDATE FlightBooking.free_seats
- SET count = count + 5
- WHERE flight_id = 739d8b9a-ffd9-11e8-8eb2-f2801f1b9fd1;
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (739d8b9a-ffd9-11e8-8eb2-f2801f1b9fd1, 1, true);
@@ -234,10 +212,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (98d83040-ffd9-11e8-8eb2-f2801f1b9fd1, 'Warsaw', 'Tokyo', '2019-06-06', 600, 1300);
 
-UPDATE FlightBooking.free_seats
- SET count = count + 5
- WHERE flight_id = 98d83040-ffd9-11e8-8eb2-f2801f1b9fd1;
-
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (98d83040-ffd9-11e8-8eb2-f2801f1b9fd1, 1, true);
 
@@ -257,10 +231,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (8bcdf31e-ffdc-11e8-8eb2-f2801f1b9fd1, 'Berlin', 'Tokyo', '2019-06-06', 730, 1150);
-
-UPDATE FlightBooking.free_seats
- SET count = count + 5
- WHERE flight_id = 8bcdf31e-ffdc-11e8-8eb2-f2801f1b9fd1;
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (8bcdf31e-ffdc-11e8-8eb2-f2801f1b9fd1, 1, true);
@@ -282,10 +252,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (924b5bc8-ffdc-11e8-8eb2-f2801f1b9fd1, 'Berlin', 'Paris', '2019-06-06', 210, 100);
 
-UPDATE FlightBooking.free_seats
- SET count = count + 5
- WHERE flight_id = 924b5bc8-ffdc-11e8-8eb2-f2801f1b9fd1;
-
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (924b5bc8-ffdc-11e8-8eb2-f2801f1b9fd1, 1, true);
 
@@ -305,10 +271,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (15a8c4be-ffd9-11e8-8eb2-f2801f1b9fd1, 'Warsaw', 'Berlin', '2019-05-12', 600, 1500);
 
-UPDATE FlightBooking.free_seats
- SET count = count + 8
- WHERE flight_id = 19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8;
-
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 1, true);
 
@@ -319,10 +281,10 @@ INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 3, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 4, false);
+  VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 4, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 5, false);
+  VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 5, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 6, true);
@@ -338,21 +300,9 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 10, true);
-
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (c43e5938-f14e-4240-8935-6486ed917fc9, 19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 'Harry Potter', 4);
-
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (5347caa1-77d1-47b6-a0a3-36ffb9c1d07f, 19b7a9f9-b975-408c-9aa6-dbd5a9d4e9d8, 'Lord Voldemort', 5);
-
-
 -- ------------------------------------------------------------------------------------------------
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 'Berlin', 'Tokyo', '2019-05-12', 700, 1500);
-
-UPDATE FlightBooking.free_seats
- SET count = count + 8
- WHERE flight_id = 0ae9176f-a280-42de-8284-43c6a86f6a50;
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 1, true);
@@ -364,10 +314,10 @@ INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 3, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 4, false);
+  VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 4, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
-  VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 5, false);
+  VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 5, true);
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 6, true);
@@ -384,19 +334,9 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (0ae9176f-a280-42de-8284-43c6a86f6a50, 10, true);
 
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (773809b9-cfa2-4a6b-ad32-6626cb81d0be, 0ae9176f-a280-42de-8284-43c6a86f6a50, 'Kasia Kowalska', 4);
-
-INSERT INTO reservations (id, flight_id, passenger, seat_no)
-  VALUES (a1f6ec14-cd89-429b-a590-0722e72f1b33, 0ae9176f-a280-42de-8284-43c6a86f6a50, 'Borys Szyc', 5);
-
 -- ------------------------------------------------------------------------------------------------
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (83cafcbf-f041-4532-89bb-c3c1be134063, 'Paris', 'Tokyo', '2019-05-13', 600, 1500);
-
-UPDATE FlightBooking.free_seats
- SET count = count + 60
- WHERE flight_id = 83cafcbf-f041-4532-89bb-c3c1be134063;
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (83cafcbf-f041-4532-89bb-c3c1be134063, 1, true);
@@ -582,10 +522,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (e8781650-2be9-4020-b3d0-52e0f144e663, 'Paris', 'Tokyo', '2019-05-12', 600, 1500);
 
-UPDATE FlightBooking.free_seats
- SET count = count + 60
- WHERE flight_id = e8781650-2be9-4020-b3d0-52e0f144e663;
-
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (e8781650-2be9-4020-b3d0-52e0f144e663, 1, true);
 
@@ -769,10 +705,6 @@ INSERT INTO seats (flight_id, seat_no, is_free)
 -- ------------------------------------------------------------------------------------------------
 INSERT INTO flights (id, departure, destination, date, duration, cost)
   VALUES (75e14e6e-e501-453c-be77-9d84eac5ee3d, 'Paris', 'Berlin', '2019-05-13', 600, 1500);
-
-UPDATE FlightBooking.free_seats
- SET count = count + 60
- WHERE flight_id = 75e14e6e-e501-453c-be77-9d84eac5ee3d;
 
 INSERT INTO seats (flight_id, seat_no, is_free)
   VALUES (75e14e6e-e501-453c-be77-9d84eac5ee3d, 1, true);
