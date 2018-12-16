@@ -6,6 +6,7 @@ import Logger
 import Passenger
 import model.Flight
 import model.ReservationData
+import model.Seat
 import java.util.*
 
 class MakeMultipleFlightsReservationScenario : Scenario {
@@ -16,21 +17,19 @@ class MakeMultipleFlightsReservationScenario : Scenario {
 
     override fun execute(session: BackendSession, passenger: Passenger): List<ReservationData> {
         val numberOfFlightsToBook = random.nextInt(2) + 2
-        val flightsToBook = mutableSetOf<Flight>()
+        val seatsToBook = mutableSetOf<Pair<Flight, Seat>>()
         val reservations = mutableListOf<ReservationData>()
         do {
             val flight = getRandomFlight()
-            val hasFreeSeats = session.getFreeSeatsCount(flight.id) > 0
-            if (hasFreeSeats) {
-                flightsToBook += flight
+            val freeSeats = session.getFreeSeats(flight.id)
+            if (freeSeats.isNotEmpty()) {
+                seatsToBook += Pair(flight, freeSeats[random.nextInt(freeSeats.size)])
             }
-        } while (flightsToBook.size < numberOfFlightsToBook)
+        } while (seatsToBook.size < numberOfFlightsToBook)
 
-        flightsToBook.forEach {
-            val freeSeats = session.getFreeSeats(it.id)
-            val seat = freeSeats[random.nextInt(freeSeats.size)]
-            val reservationId = session.createNewReservation(passenger, it.id, seat.seat_no)
-            reservations += ReservationData(it, reservationId, seat)
+        seatsToBook.forEach { (flight,seat) ->
+            val reservationId = session.createNewReservation(passenger, flight.id, seat.seat_no)
+            reservations += ReservationData(flight, reservationId, seat)
         }
         var shouldDeclineAllReservations = false
         reservations.forEach {
