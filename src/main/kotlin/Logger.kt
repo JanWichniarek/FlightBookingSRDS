@@ -1,6 +1,8 @@
 import model.Flight
 import model.Seat
 import java.io.File
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 typealias TestName = String
 typealias Duration = Long
@@ -17,6 +19,7 @@ object Logger {
 
     private var testsFraction = mutableMapOf<TestName, Pair<Numerator, Denominator>>()
     private var startTime = ThreadLocal<Duration>()
+    var connectionExceptions = AtomicLong(0)
 
     fun start() {
         startTime.set(System.currentTimeMillis())
@@ -25,7 +28,7 @@ object Logger {
     @Synchronized
     fun end(testName: TestName) {
         val duration = System.currentTimeMillis() - startTime.get()
-        val oldPair = testsFraction[testName] ?: Pair(0,0)
+        val oldPair = testsFraction[testName] ?: Pair<Numerator, Denominator>(0,0)
         val newPair = Pair(oldPair.first + duration, oldPair.second + 1)
         testsFraction[testName] = newPair
     }
@@ -34,8 +37,10 @@ object Logger {
     fun printTestsAverageTime(): String {
         val info = StringBuilder()
         testsFraction.forEach { testName, fractionPair ->
-            val average =  (fractionPair.first / fractionPair.second)
-            info.append("Test $testName avg time: $average")
+            val seconds = TimeUnit.MILLISECONDS.toSeconds(fractionPair.first).toDouble()
+            val average = seconds / fractionPair.second;
+            val averageRounded = String.format(java.util.Locale.US, "%.3f", average)
+            info.append("Scenario $testName avg time: $averageRounded\n")
         }
         return info.toString()
     }
@@ -71,7 +76,7 @@ object Logger {
     fun addSeatFreeAfterReservation(flight: Flight, seat: Seat) {
         operationsExecuted++
         seatReservationNotVisible++
-        allLogs.add("""Miejsce $seat wolne pomimo rezerwacji w locie""")
+        allLogs.add("""Miejsce $seat wolne pomimo rezerwacji w locie $flight""")
     }
 
     @Synchronized
@@ -83,24 +88,23 @@ object Logger {
 
     fun printStatus(): String {
         return """
-            ----------------------------------------
-            operationsExecuted : $operationsExecuted
-            successfulOperations : $successfulOperations
-            multipleReservationsOnOneSeat : $multipleReservationsOnOneSeat
-            seatReservationNotVisible : $seatReservationNotVisible
-            atomicReservationUnsuccessful : $atomicReservationUnsuccessful
-            printTestsAverageTime: ${printTestsAverageTime()}
-            ----------------------------------------
-        """.trimIndent()
+            |----------------------------------------
+            |operationsExecuted : $operationsExecuted
+            |successfulOperations : $successfulOperations
+            |multipleReservationsOnOneSeat : $multipleReservationsOnOneSeat
+            |seatReservationNotVisible : $seatReservationNotVisible
+            |atomicReservationUnsuccessful : $atomicReservationUnsuccessful
+            |connectionExceptions : $connectionExceptions
+            |${printTestsAverageTime()}
+            |----------------------------------------
+        """.trimMargin()
     }
 
     fun saveLogToFile() {
         File("logs.txt").printWriter().use { out -> {
                 allLogs.forEach { out.println(it) }
-                out.println("Liczba wykonanych operacji: $operationsExecuted w tym operacje nieprawidłowe: $multipleReservationsOnOneSeat")
+                out.println(printStatus())
             }
         }
     }
-
-
 }

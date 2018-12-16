@@ -11,6 +11,7 @@ class FlightBookingTest {
     private val random = Random()
     private val session = BackendSession("127.0.0.1", "FlightBooking")
     private val allFlights = session.getFlights()
+    private val scenarios = this::class.java.declaredMethods.filter { it.name.startsWith("make") }
 
     data class ReservationData(val flight: Flight, val reservationId: ReservationId, val seat: Seat)
 
@@ -98,15 +99,10 @@ class FlightBookingTest {
     }
 
     private fun randomScenario(session: BackendSession, passenger: Passenger) {
-        val scenarioNumber = random.nextInt(3)
+        val selectedScenario = scenarios[random.nextInt(scenarios.size)]
         Logger.start()
-        when (scenarioNumber) {
-            0 -> makeReservationAndCheck(session, passenger)
-            1 -> makeReservationAndDecline(session, passenger)
-            2 -> makeMultipleFlightsReservation(session, passenger)
-            3 -> makeReservationAndChangeReservation(session, passenger)
-        }
-        Logger.end(scenarioNumber.toString())
+        selectedScenario.invoke(this, session, passenger)
+        Logger.end(selectedScenario.name)
     }
 
     private fun test(scenario: (BackendSession, Passenger) -> Unit) {
@@ -147,4 +143,8 @@ class FlightBookingTest {
     private fun getRandomDate() = FlightDates.getRandomDate()
     private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt(3)]
     private fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
+
+    companion object {
+
+    }
 }

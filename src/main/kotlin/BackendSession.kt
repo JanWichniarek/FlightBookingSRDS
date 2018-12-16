@@ -92,6 +92,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
     fun getAllReservations(): List<Reservation> {
         val result = session
             .executeAndHandleException(BoundStatement(GET_ALL_RESERVATIONS))
+            .filter { r -> r.getString("passenger") != null }
             .map { r -> Reservation(r) }
         logger.debug(GET_ALL_RESERVATIONS.toString())
         return result
@@ -100,6 +101,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
     fun getReservations(flightId: FlightId): List<Reservation> {
         val result = session
             .executeAndHandleException(BoundStatement(GET_RESERVATIONS_BY_FLIGHT).bind(flightId))
+            .filter { r -> r.getString("passenger") != null }
             .map { r -> Reservation(r) }
         logger.debug(GET_RESERVATIONS_BY_FLIGHT.toString())
         return result
@@ -182,8 +184,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
     }
 
     private fun deleteReservation(reservationId: ReservationId, flightId: FlightId, seatNo: SeatNo) {
-        val result =
-            session.executeAndHandleException(BoundStatement(DELETE_RESERVATION).bind(flightId, seatNo, reservationId))
+        session.executeAndHandleException(BoundStatement(DELETE_RESERVATION).bind(flightId, seatNo, reservationId))
         logger.debug(DELETE_RESERVATION.toString())
     }
 
@@ -212,6 +213,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
             } catch (e: Exception) {
                 when (e) {
                     is WriteTimeoutException, is ReadTimeoutException, is OperationTimedOutException -> {
+                        Logger.connectionExceptions.incrementAndGet()
                     }
                     else -> throw e
                 }
