@@ -15,27 +15,35 @@ class FlightBookingTest {
 
     @Test
     fun testRandom() {
-        return test { session, passenger -> randomScenario(session, passenger) }
+        test { session, passenger -> randomScenario(session, passenger) }
     }
 
     @Test
     fun testMakingReservation() {
-        return test { session, passenger -> makeReservationAndCheck(session, passenger) }
+        Logger.start()
+        test { session, passenger -> makeReservationAndCheck(session, passenger) }
+        Logger.end("makeReservationAndCheck")
     }
 
     @Test
     fun testMakingAndCancellingReservation() {
-        return test { session, passenger -> makeReservationAndCancel(session, passenger) }
+        Logger.start()
+        test { session, passenger -> makeReservationAndCancel(session, passenger) }
+        Logger.end("makeReservationAndCancel")
     }
 
     @Test
     fun testMakingAndChangingReservation() {
-        return test { session, passenger -> makeReservationAndChange(session, passenger) }
+        Logger.start()
+        test { session, passenger -> makeReservationAndChange(session, passenger) }
+        Logger.end("makeReservationAndChange")
     }
 
     @Test
     fun testMakingAtomicMultipleReservations() {
-        return test { session, passenger -> makeMultipleFlightsReservation(session, passenger) }
+        Logger.start()
+        test { session, passenger -> makeMultipleFlightsReservation(session, passenger) }
+        Logger.end("makeMultipleFlightsReservation")
     }
 
     private fun makeReservationAndCheck(session: BackendSession, passenger: Passenger): ReservationData? {
