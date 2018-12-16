@@ -14,7 +14,7 @@ import java.util.*
  *
  * Performing stress tests often results in numerous WriteTimeoutExceptions,
  * ReadTimeoutExceptions (thrown by Cassandra replicas) and
- * OpetationTimedOutExceptions (thrown by the client). Remember to retry
+ * OperationTimedOutExceptions (thrown by the client). Remember to retry
  * failed operations until success (it can be done through the RetryPolicy mechanism:
  * https://stackoverflow.com/questions/30329956/cassandra-datastax-driver-retry-policy )
  */
@@ -41,6 +41,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
     private val GET_ALL_FLIGHTS  by lazy { session.prepare("SELECT * FROM flights;") }
     private val GET_FLIGHTS_BY_DAY_AND_DEPARTURE by lazy { session.prepare("SELECT * FROM flights WHERE departure = ? AND date = ?;") }
     private val GET_FREE_SEATS_BY_FLIGHT by lazy { session.prepare("SELECT * FROM seats WHERE flight_id = ? AND is_free = true;") }
+    private val GET_FREE_SEATS_COUNT_BY_FLIGHT by lazy { session.prepare("SELECT count(is_free) FROM seats WHERE flight_id = ? AND is_free = true;") }
     private val INSERT_NEW_RESERVATION by lazy { session.prepare("INSERT INTO reservations (id, flight_id, passenger, seat_no) VALUES (?, ?, ?, ?);") }
     private val UPDATE_RESERVATION_PASSENGER by lazy { session.prepare("UPDATE reservations SET passenger = ? WHERE flight_id = ? AND seat_no = ? AND id = ? IF EXISTS;") }
     private val DELETE_RESERVATION by lazy { session.prepare("DELETE passenger FROM reservations WHERE flight_id = ? AND seat_no = ? AND id = ?;") }
@@ -77,6 +78,14 @@ class BackendSession(contactPoint: String, keyspace: String) {
             .map { r -> Seat(r) }
         logger.debug(GET_FREE_SEATS_BY_FLIGHT.toString())
         return result
+    }
+
+    fun getFreeSeatsCount(flightId: FlightId): Long {
+        val result = session
+            .executeAndHandleException(BoundStatement(GET_FREE_SEATS_COUNT_BY_FLIGHT).bind(flightId))
+            .map { r -> r.getLong(0) }
+        logger.debug(GET_FREE_SEATS_COUNT_BY_FLIGHT.toString())
+        return if (result.size == 1) result[0] else throw RuntimeException("Should not happen")
     }
 
     fun getAllReservations(): List<Reservation> {
