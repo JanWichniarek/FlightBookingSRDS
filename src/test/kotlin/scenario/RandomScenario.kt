@@ -6,18 +6,15 @@ import model.ReservationData
 import java.util.*
 
 class RandomScenario : Scenario {
-    private lateinit var currentScenario: Scenario
-    private val lock = Any()
+    private var currentScenario = ThreadLocal<Scenario>()
     private val random = Random()
     private val scenarios = listOf(MakeReservationScenario(), MakeReservationAndCancelScenario(), MakeReservationAndChangeScenario(), MakeMultipleFlightsReservationScenario())
 
     override val name: String
-        get() = synchronized(lock) { currentScenario.name }
+        get() = currentScenario.get().name
 
     override fun execute(session: BackendSession, passenger: Passenger): List<ReservationData> {
-        synchronized(lock) {
-            currentScenario = scenarios[random.nextInt(scenarios.size)]
-        }
-        return currentScenario.execute(session, passenger)
+        currentScenario.set(scenarios[random.nextInt(scenarios.size)])
+        return currentScenario.get().execute(session, passenger)
     }
 }
