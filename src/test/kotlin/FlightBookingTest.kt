@@ -1,7 +1,5 @@
 import model.Flight
 import model.Seat
-import model.enums.Cities
-import model.enums.FlightDates
 import org.junit.Test
 import java.util.*
 
@@ -15,7 +13,32 @@ class FlightBookingTest {
 
     data class ReservationData(val flight: Flight, val reservationId: ReservationId, val seat: Seat)
 
-    fun makeReservationAndCheck(session: BackendSession, passenger: Passenger): ReservationData? {
+    @Test
+    fun testRandom() {
+        return test { session, passenger -> randomScenario(session, passenger) }
+    }
+
+    @Test
+    fun testMakingReservation() {
+        return test { session, passenger -> makeReservationAndCheck(session, passenger) }
+    }
+
+    @Test
+    fun testMakingAndCancellingReservation() {
+        return test { session, passenger -> makeReservationAndCancel(session, passenger) }
+    }
+
+    @Test
+    fun testMakingAndChangingReservation() {
+        return test { session, passenger -> makeReservationAndChange(session, passenger) }
+    }
+
+    @Test
+    fun testMakingAtomicMultipleReservations() {
+        return test { session, passenger -> makeMultipleFlightsReservation(session, passenger) }
+    }
+
+    private fun makeReservationAndCheck(session: BackendSession, passenger: Passenger): ReservationData? {
         val flight = getRandomFlight()
         val freeSeats = session.getFreeSeats(flight.id)
         var success = false
@@ -37,18 +60,18 @@ class FlightBookingTest {
         return null
     }
 
-    fun makeReservationAndDecline(session: BackendSession, passenger: Passenger) {
+    private fun makeReservationAndCancel(session: BackendSession, passenger: Passenger) {
         val (flight, reservationId, seat) = makeReservationAndCheck(session, passenger) ?: return
         session.cancelReservation(flight.id, seat.seat_no, reservationId)
         val reservationsForMySeat = session.getReservations(flight.id, seat.seat_no)
-        when {
-            !session.isSeatFree(flight.id, seat.seat_no) || reservationsForMySeat.isNotEmpty() ->
-                Logger.unsuccessfulCancellation(flight, seat)
-            else -> Logger.addSuccessfulOperation()
+        if (reservationsForMySeat.any { it.id == reservationId }) {
+            Logger.unsuccessfulCancellation(flight, seat)
+        } else {
+            Logger.addSuccessfulOperation()
         }
     }
 
-    fun makeReservationAndChangeReservation(session: BackendSession, passenger: Passenger) {
+    private fun makeReservationAndChange(session: BackendSession, passenger: Passenger) {
         val (flight, reservationId, seat) = makeReservationAndCheck(session, passenger) ?: return
         val (changedFlight, changedReservationId, changedSeat) = makeReservationAndCheck(session, passenger) ?: return
         session.cancelReservation(flight.id, seat.seat_no, reservationId)
@@ -63,7 +86,7 @@ class FlightBookingTest {
         }
     }
 
-    fun makeMultipleFlightsReservation(session: BackendSession, passenger: Passenger) {
+    private fun makeMultipleFlightsReservation(session: BackendSession, passenger: Passenger) {
         val numberOfFlightsToBook = random.nextInt(2) + 2
         val flightsToBook = mutableSetOf<Flight>()
         val reservations = mutableMapOf<FlightId, Pair<ReservationId, Seat>>()
@@ -134,13 +157,5 @@ class FlightBookingTest {
         loggingThread.interrupt()
     }
 
-    @Test
-    fun startTesting() {
-        test { session, passenger -> randomScenario(session, passenger) }
-    }
-
-    private fun getRandomCity() = Cities.getRandomCity()
-    private fun getRandomDate() = FlightDates.getRandomDate()
-    private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt(3)]
     private fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
 }
