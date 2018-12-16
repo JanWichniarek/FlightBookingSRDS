@@ -18,7 +18,7 @@ class MakeReservationAndChangeScenario : Scenario {
 
         val newReservationsList = MakeReservationScenario().execute(session, passenger)
         if (newReservationsList.isEmpty()) {
-            return emptyList()
+            return reservationsList
         }
         val (changedFlight, changedReservationId, changedSeat) = newReservationsList[0]
 
