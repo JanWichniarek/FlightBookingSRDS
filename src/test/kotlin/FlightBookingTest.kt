@@ -23,8 +23,8 @@ class FlightBookingTest {
             val reservationId = session.createNewReservation(passenger, flight.id, seat.seat_no)
             val reservationsForMySeat = session.getReservations(flight.id, seat.seat_no)
             when {
-                !session.isSeatFree(flight.id, seat.seat_no) -> run { Logger.addSeatFreeAfterReservation(flight, seat); success = true; }
-                reservationsForMySeat.size == 1 && reservationsForMySeat[0].id == reservationId -> Logger.addSuccessfulOperation()
+                session.isSeatFree(flight.id, seat.seat_no) -> Logger.addSeatFreeAfterReservation(flight, seat)
+                reservationsForMySeat.size == 1 && reservationsForMySeat[0].id == reservationId -> { Logger.addSuccessfulOperation(); success = true }
                 reservationsForMySeat.size == 1 && reservationsForMySeat[0].id != reservationId -> Logger.notExistingReservation(flight, seat)
                 reservationsForMySeat.size > 1 -> Logger.anotherReservations(flight, seat)
                 reservationsForMySeat.isEmpty() -> Logger.addSeatFreeAfterReservation(flight, seat)
@@ -136,7 +136,7 @@ class FlightBookingTest {
 
     @Test
     fun testMakeReservationAndCheck() {
-        test { session, passenger -> makeReservationAndCheck(session, passenger) }
+        test { session, passenger -> makeReservationAndDecline(session, passenger) }
     }
 
     private fun getRandomCity() = Cities.getRandomCity()
