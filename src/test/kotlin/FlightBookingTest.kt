@@ -1,10 +1,29 @@
+import model.ReservationData
 import org.junit.Test
 import scenario.*
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class FlightBookingTest {
 
+    companion object {
+        private const val CLEANING_MAX_DELAY = 10
+        private val CLEANING_MODE = ReservationCleaning.DELAYED
+
+        private val session = BackendSession("127.0.0.1", "FlightBooking")
+        private val allFlights = session.getFlights()
+        private val random = Random()
+
+        fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
+    }
+
+    private enum class ReservationCleaning {
+        DISABLED, IMMEDIATE, DELAYED
+    }
+
     private lateinit var loggingThread: Thread
+    private val cleaningExecutor = Executors.newSingleThreadScheduledExecutor()
 
     @Test
     fun testRandom() {
@@ -53,7 +72,12 @@ class FlightBookingTest {
                     Logger.start()
                     val reservationsToClean = scenario.execute(session, passenger)
                     Logger.end(scenario.name)
-                    reservationsToClean.forEach { session.cancelReservation(it.flight.id, it.seat.seat_no, it.reservationId) }
+                    when (CLEANING_MODE) {
+                        ReservationCleaning.IMMEDIATE -> cancelReservations(reservationsToClean)
+                        ReservationCleaning.DELAYED -> cleaningExecutor.schedule({
+                            cancelReservations(reservationsToClean)
+                        }, random.nextInt(CLEANING_MAX_DELAY + 1).toLong(), TimeUnit.SECONDS)
+                    }
                 }
             }
             threads.add(thread)
@@ -61,13 +85,10 @@ class FlightBookingTest {
         threads.forEach { it.start() }
         threads.forEach { it.join() }
         loggingThread.interrupt()
+        cleaningExecutor.shutdown()
     }
 
-    companion object {
-        val session = BackendSession("127.0.0.1", "FlightBooking")
-        val allFlights = session.getFlights()
-        val random = Random()
-
-        fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
+    private fun cancelReservations(reservations: List<ReservationData>) {
+        reservations.forEach { session.cancelReservation(it.flight.id, it.seat.seat_no, it.reservationId) }
     }
 }
