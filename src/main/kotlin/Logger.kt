@@ -5,6 +5,7 @@ import java.io.File
 object Logger {
 
     private var operationsExecuted = 0
+    private var successfulOperations = 0
     private var multipleReservationsOnOneSeat = 0
     private var seatReservationNotVisible = 0
     private var atomicReservationUnsuccessful = 0
@@ -13,6 +14,7 @@ object Logger {
     @Synchronized
     fun addSuccessfulOperation() {
         operationsExecuted++
+        successfulOperations++
     }
 
     @Synchronized
@@ -54,6 +56,7 @@ object Logger {
         return """
             ----------------------------------------
             operationsExecuted : $operationsExecuted
+            successfulOperations : $successfulOperations
             multipleReservationsOnOneSeat : $multipleReservationsOnOneSeat
             seatReservationNotVisible : $seatReservationNotVisible
             atomicReservationUnsuccessful : $atomicReservationUnsuccessful
