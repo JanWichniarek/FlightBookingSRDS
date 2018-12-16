@@ -51,8 +51,9 @@ class FlightBookingTest {
                 val passenger = "Pasażer $i"
                 for (j in 0..999) {
                     Logger.start()
-                    scenario.execute(session, passenger)
+                    val reservationsToClean = scenario.execute(session, passenger)
                     Logger.end(scenario.name)
+                    reservationsToClean.forEach { session.cancelReservation(it.flight.id, it.seat.seat_no, it.reservationId) }
                 }
             }
             threads.add(thread)
