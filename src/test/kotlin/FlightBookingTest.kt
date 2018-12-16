@@ -135,7 +135,7 @@ class FlightBookingTest {
     }
 
     @Test
-    fun testMakeReservationAndCheck() {
+    fun startTesting() {
         test { session, passenger -> randomScenario(session, passenger) }
     }
 
@@ -143,8 +143,4 @@ class FlightBookingTest {
     private fun getRandomDate() = FlightDates.getRandomDate()
     private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt(3)]
     private fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
-
-    companion object {
-
-    }
 }
