@@ -9,11 +9,13 @@ class FlightBookingTest {
 
     private lateinit var loggingThread: Thread
     private val random = Random()
+    private val session = BackendSession("127.0.0.1", "FlightBooking")
+    private val allFlights = session.getFlights()
 
     data class ReservationData(val flight: Flight, val reservationId: ReservationId, val seat: Seat)
 
     fun makeReservationAndCheck(session: BackendSession, passenger: Passenger): ReservationData? {
-        val flight = getRandomFlight(session)
+        val flight = getRandomFlight()
         val freeSeats = session.getFreeSeats(flight.id)
         var success = false
         if (freeSeats.isNotEmpty()) {
@@ -65,7 +67,7 @@ class FlightBookingTest {
         val flightsToBook = mutableSetOf<Flight>()
         val reservations = mutableMapOf<FlightId, Pair<ReservationId, Seat>>()
         while (flightsToBook.size < numberOfFlightsToBook){
-            flightsToBook.add(getRandomFlight(session))
+            flightsToBook.add(getRandomFlight())
         }
        
         flightsToBook.forEach {
@@ -103,7 +105,6 @@ class FlightBookingTest {
     }
 
     private fun test(scenario: (BackendSession, Passenger) -> Unit) {
-        val session = BackendSession("127.0.0.1", "FlightBooking")
         val threads = mutableListOf<Thread>()
         loggingThread = Thread {
             try {
@@ -141,11 +142,5 @@ class FlightBookingTest {
     private fun getRandomCity() = Cities.getRandomCity()
     private fun getRandomDate() = FlightDates.getRandomDate()
     private fun getRandomPassenger() = arrayOf("abc", "def", "ghi")[random.nextInt(3)]
-    private fun getRandomFlight(session: BackendSession): Flight {
-        val city = "Warsaw"
-        val date = "2019-06-06"
-        val flights = session.getFlights(date, city)
-//        return flights[random.nextInt(flights.size)]
-        return flights[0]
-    }
+    private fun getRandomFlight() = allFlights[random.nextInt(allFlights.size)]
 }

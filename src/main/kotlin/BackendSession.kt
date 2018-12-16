@@ -56,7 +56,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
 
     fun getFlights(): List<Flight> {
         val result = session
-            .execute(BoundStatement(GET_FLIGHTS_BY_DAY_AND_DEPARTURE))
+            .execute(BoundStatement(GET_ALL_FLIGHTS))
             .map { r -> Flight(r) }
         logger.debug(GET_ALL_FLIGHTS.toString())
         return result
