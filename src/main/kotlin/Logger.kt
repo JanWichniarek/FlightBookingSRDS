@@ -2,14 +2,43 @@ import model.Flight
 import model.Seat
 import java.io.File
 
-object Logger {
+typealias TestName = String
+typealias Duration = Long
+typealias Denominator = Long
+typealias Numerator = Long
 
+object Logger {
     private var operationsExecuted = 0
     private var successfulOperations = 0
     private var multipleReservationsOnOneSeat = 0
     private var seatReservationNotVisible = 0
     private var atomicReservationUnsuccessful = 0
     private var allLogs = mutableListOf<String>()
+
+    private var testsFraction = mutableMapOf<TestName, Pair<Numerator, Denominator>>()
+    private var startTime = ThreadLocal<Duration>()
+
+    fun start() {
+        startTime.set(System.currentTimeMillis())
+    }
+
+    @Synchronized
+    fun end(testName: TestName) {
+        val duration = System.currentTimeMillis() - startTime.get()
+        val oldPair = testsFraction[testName] ?: Pair(0,0)
+        val newPair = Pair(oldPair.first + duration, oldPair.second + 1)
+        testsFraction[testName] = newPair
+    }
+
+    @Synchronized
+    fun printTestsAverageTime(): String {
+        val info = StringBuilder()
+        testsFraction.forEach { testName, fractionPair ->
+            val average =  (fractionPair.first / fractionPair.second)
+            info.append("Test $testName avg time: $average")
+        }
+        return info.toString()
+    }
 
     @Synchronized
     fun addSuccessfulOperation() {
@@ -60,6 +89,7 @@ object Logger {
             multipleReservationsOnOneSeat : $multipleReservationsOnOneSeat
             seatReservationNotVisible : $seatReservationNotVisible
             atomicReservationUnsuccessful : $atomicReservationUnsuccessful
+            printTestsAverageTime: ${printTestsAverageTime()}
             ----------------------------------------
         """.trimIndent()
     }

@@ -99,12 +99,14 @@ class FlightBookingTest {
 
     private fun randomScenario(session: BackendSession, passenger: Passenger) {
         val scenarioNumber = random.nextInt(3)
+        Logger.start()
         when (scenarioNumber) {
             0 -> makeReservationAndCheck(session, passenger)
             1 -> makeReservationAndDecline(session, passenger)
             2 -> makeMultipleFlightsReservation(session, passenger)
             3 -> makeReservationAndChangeReservation(session, passenger)
         }
+        Logger.end(scenarioNumber.toString())
     }
 
     private fun test(scenario: (BackendSession, Passenger) -> Unit) {
