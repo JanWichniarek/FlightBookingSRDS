@@ -1,9 +1,9 @@
-import model.*
+import model.Flight
+import model.Seat
 import model.enums.Cities
 import model.enums.FlightDates
 import org.junit.Test
 import java.util.*
-import java.util.function.BiFunction
 
 class FlightBookingTest {
 
@@ -66,12 +66,15 @@ class FlightBookingTest {
         val numberOfFlightsToBook = random.nextInt(2) + 2
         val flightsToBook = mutableSetOf<Flight>()
         val reservations = mutableMapOf<FlightId, Pair<ReservationId, Seat>>()
-        while (flightsToBook.size < numberOfFlightsToBook){
+        while (flightsToBook.size < numberOfFlightsToBook) {
             flightsToBook.add(getRandomFlight())
         }
        
         flightsToBook.forEach {
             val freeSeats = session.getFreeSeats(it.id)
+            if (freeSeats.isEmpty()) {
+                return
+            }
             val seat = freeSeats[random.nextInt(freeSeats.size)]
             val reservationId = session.createNewReservation(passenger, it.id, seat.seat_no)
             reservations[it.id] = Pair(reservationId, seat)
@@ -127,7 +130,6 @@ class FlightBookingTest {
                 }
             }
             threads.add(thread)
-
         }
         threads.forEach { it.start() }
         threads.forEach { it.join() }
@@ -136,7 +138,7 @@ class FlightBookingTest {
 
     @Test
     fun testMakeReservationAndCheck() {
-        test { session, passenger -> makeReservationAndDecline(session, passenger) }
+        test { session, passenger -> randomScenario(session, passenger) }
     }
 
     private fun getRandomCity() = Cities.getRandomCity()
