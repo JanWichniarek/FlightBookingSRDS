@@ -1,10 +1,11 @@
 import com.datastax.driver.core.*
 import com.datastax.driver.core.exceptions.OperationTimedOutException
+import com.datastax.driver.core.exceptions.ReadTimeoutException
+import com.datastax.driver.core.exceptions.TransportException
+import com.datastax.driver.core.exceptions.WriteTimeoutException
 import model.Flight
 import model.Reservation
 import model.Seat
-import org.apache.cassandra.exceptions.ReadTimeoutException
-import org.apache.cassandra.exceptions.WriteTimeoutException
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -201,7 +202,7 @@ class BackendSession(contactPoint: String, keyspace: String) {
                 return this.execute(statement)
             } catch (e: Exception) {
                 when (e) {
-                    is WriteTimeoutException, is ReadTimeoutException, is OperationTimedOutException -> {
+                    is WriteTimeoutException, is ReadTimeoutException, is OperationTimedOutException, is TransportException -> {
                         Logger.connectionExceptions.incrementAndGet()
                     }
                     else -> throw e
