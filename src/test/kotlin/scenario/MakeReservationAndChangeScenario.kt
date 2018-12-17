@@ -26,9 +26,9 @@ class MakeReservationAndChangeScenario : Scenario {
         val reservationsForMyOldSeat = session.getReservations(flight.id, seat.seat_no)
         val reservationsForMyNewSeat = session.getReservations(changedFlight.id, changedSeat.seat_no)
         when {
-            !session.isSeatFree(flight.id, seat.seat_no) || reservationsForMyOldSeat.isNotEmpty() ->
+            !session.isSeatFree(flight.id, seat.seat_no) || reservationsForMyOldSeat.any { it.id == reservationId } ->
                 Logger.unsuccessfulCancellation(flight, seat)
-            session.isSeatFree(changedFlight.id, changedSeat.seat_no) || reservationsForMyNewSeat.isEmpty() ->
+            session.isSeatFree(changedFlight.id, changedSeat.seat_no) || reservationsForMyNewSeat.none { it.id == changedReservationId } ->
                 Logger.notExistingReservation(changedFlight, changedSeat)
             else -> Logger.addSuccessfulOperation()
         }
